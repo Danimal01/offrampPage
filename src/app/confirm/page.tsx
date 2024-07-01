@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import styles from './confirm.module.css';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, createTransferInstruction } from '@solana/spl-token';
@@ -15,7 +15,7 @@ interface PhantomProvider {
   signMessage: (message: Uint8Array) => Promise<any>;
 }
 
-const Confirm = () => {
+const ConfirmComponent  = () => {
   const searchParams = useSearchParams();
   const [phantomProvider, setPhantomProvider] = useState<PhantomProvider | null>(null);
 
@@ -60,6 +60,14 @@ const Confirm = () => {
         tokenMintAddress,
         depositAddress
       );
+
+      // Log addresses to verify
+    // Log addresses and amounts to verify
+    console.log('Deposit Address:', depositAddress.toBase58());
+    console.log('Destination Token Account Address:', destinationTokenAccountAddress.toBase58());
+    console.log('Crypto Amount:', cryptoAmount);
+    console.log('Amount in smallest unit:', BigInt(Math.round(cryptoAmount * 1e6)));
+      
 
       // Create associated token account if it doesn't exist
       const sourceTokenAccountInfo = await connection.getAccountInfo(sourceTokenAccountAddress);
@@ -139,7 +147,7 @@ const Confirm = () => {
 
   return (
     <main className={styles.main}>
-      <h1 className={styles.title}>Transaction Details</h1>
+      <h1 className={styles.title}>Custom Deposit Page</h1>
       <div className={styles.details}>
         <p className={styles.detailItem}><strong>Merchant ID:</strong> {searchParams.get('merchantId')}</p>
         <p className={styles.detailItem}><strong>External ID:</strong> {searchParams.get('externalId')}</p>
@@ -156,5 +164,11 @@ const Confirm = () => {
     </main>
   );
 };
+
+const Confirm = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <ConfirmComponent />
+  </Suspense>
+);
 
 export default Confirm;
