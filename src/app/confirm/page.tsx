@@ -38,38 +38,34 @@ const ConfirmComponent  = () => {
       alert('Phantom provider not found or not connected');
       return;
     }
-
+  
     const depositAddress = new PublicKey(searchParams.get('depositAddress') || '');
     const cryptoAmount = parseFloat(searchParams.get('cryptoAmount') || '0');
     const cryptoCurrency = searchParams.get('cryptoCurrency');
-    const connection = new Connection('https://solana-mainnet.g.alchemy.com/v2/2AjX_GisadCWbv8Vd9dL0lILAOblOWSx');
-
+    const connection = new Connection('https://solana-mainnet.g.alchemy.com/v2/2AjX_GisadCWbv8Vd9dL0lILAOblOWSx', 'confirmed');
+  
     let transaction = new Transaction();
-
+  
     if (cryptoCurrency === 'USDC_SOL' || cryptoCurrency === 'USDT_SOL') {
       const tokenMintAddress = cryptoCurrency === 'USDC_SOL'
         ? new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
         : new PublicKey('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB');
-
+  
       const sourceTokenAccountAddress = await getAssociatedTokenAddress(
         tokenMintAddress,
         phantomProvider.publicKey
       );
-
+  
       const destinationTokenAccountAddress = await getAssociatedTokenAddress(
         tokenMintAddress,
         depositAddress
       );
-
-      // Log addresses to verify
-    // Log addresses and amounts to verify
-    console.log('Deposit Address:', depositAddress.toBase58());
-    console.log('Destination Token Account Address:', destinationTokenAccountAddress.toBase58());
-    console.log('Crypto Amount:', cryptoAmount);
-    console.log('Amount in smallest unit:', BigInt(Math.round(cryptoAmount * 1e6)));
-      
-
-      // Create associated token account if it doesn't exist
+  
+      console.log('Deposit Address:', depositAddress.toBase58());
+      console.log('Destination Token Account Address:', destinationTokenAccountAddress.toBase58());
+      console.log('Crypto Amount:', cryptoAmount);
+      console.log('Amount in smallest unit:', BigInt(Math.round(cryptoAmount * 1e6)));
+  
       const sourceTokenAccountInfo = await connection.getAccountInfo(sourceTokenAccountAddress);
       if (!sourceTokenAccountInfo) {
         transaction.add(
@@ -81,7 +77,7 @@ const ConfirmComponent  = () => {
           )
         );
       }
-
+  
       const destinationTokenAccountInfo = await connection.getAccountInfo(destinationTokenAccountAddress);
       if (!destinationTokenAccountInfo) {
         transaction.add(
@@ -93,7 +89,7 @@ const ConfirmComponent  = () => {
           )
         );
       }
-
+  
       transaction.add(
         createTransferInstruction(
           sourceTokenAccountAddress,
@@ -113,37 +109,39 @@ const ConfirmComponent  = () => {
         })
       );
     }
-
+  
     try {
       const { blockhash } = await connection.getRecentBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = phantomProvider.publicKey;
-
-      // Simulate the transaction before sending
-      const simulationResult = await connection.simulateTransaction(transaction);
-      if (simulationResult.value.err) {
-        console.error('Transaction simulation failed', simulationResult.value.err);
-        alert('Transaction simulation failed: ' + JSON.stringify(simulationResult.value.err));
-        return;
-      }
-
-      console.log('Transaction simulation result:', simulationResult);
-
-      if (!transaction.feePayer) {
-        throw new Error('Transaction fee payer required');
-      }
-
+  
       const signedTransaction = await phantomProvider.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-
-      await connection.confirmTransaction(signature);
-
-      alert('Transaction successful!');
+      const serializedTransaction = signedTransaction.serialize();
+      const signature = await connection.sendRawTransaction(serializedTransaction);
+  
+      console.log('Transaction Signature:', signature);
+  
+      // Retry logic for confirming the transaction
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+          if (confirmation.value.err) {
+            throw new Error('Transaction failed during confirmation');
+          }
+          alert('Transaction successful!');
+          return;
+        } catch (error) {
+          console.warn(`Attempt ${attempt + 1}: Transaction confirmation failed, retrying...`);
+        }
+      }
+      throw new Error('Transaction confirmation failed after multiple attempts');
+  
     } catch (error: any) {
       console.error('Transaction failed', error.message);
       alert(`Transaction failed: ${error.message}`);
     }
   };
+  
 
   return (
     <main className={styles.main}>
