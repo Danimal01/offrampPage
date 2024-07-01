@@ -6,7 +6,7 @@ export default function Home() {
     <main className={styles.main}>
       <div className={styles.iframeContainer}>
         <iframe
-          src="https://offramp.gatefi.com/?merchantId=77f72e08-b9a5-47f9-9cbb-99856c8fffde&cryptoCurrency=USDC_SOL&payout=SPEI&fiatCurrency=MXN&region=MX&confirmRedirectUrl=http://localhost:3000/confirm/"
+          src="https://offramp.gatefi.com/?merchantId=77f72e08-b9a5-47f9-9cbb-99856c8fffde&cryptoCurrency=USDC_SOL&payout=SPEI&fiatCurrency=MXN&region=MX&confirmRedirectUrl=https://offramp-page.vercel.app/confirm/"
           className={styles.iframe}
           allowFullScreen
         ></iframe>
