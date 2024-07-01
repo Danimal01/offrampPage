@@ -91,7 +91,7 @@ const Confirm = () => {
           sourceTokenAccountAddress,
           destinationTokenAccountAddress,
           phantomProvider.publicKey,
-          cryptoAmount * 1e6, // Assuming the token has 6 decimals
+          BigInt(Math.round(cryptoAmount * 1e6)), // Assuming the token has 6 decimals
           [],
           TOKEN_PROGRAM_ID
         )
@@ -101,7 +101,7 @@ const Confirm = () => {
         SystemProgram.transfer({
           fromPubkey: phantomProvider.publicKey,
           toPubkey: depositAddress,
-          lamports: cryptoAmount * 1e9, // Convert SOL to lamports
+          lamports: BigInt(Math.round(cryptoAmount * 1e9)), // Convert SOL to lamports
         })
       );
     }
